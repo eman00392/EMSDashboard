@@ -16,8 +16,10 @@
 		A108 /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B108 /* NotificationManager.swift */; };
 		BA3882592F9C152600126D42 /* AddressNotesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA3882582F9C152500126D42 /* AddressNotesView.swift */; };
 		BA38825C2F9C4DD700126D42 /* GoogleMaps in Frameworks */ = {isa = PBXBuildFile; productRef = BA38825B2F9C4DD700126D42 /* GoogleMaps */; };
+		BA74A5532F9CFA7C00E994C2 /* HistoryTapRecognizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA74A5522F9CFA7A00E994C2 /* HistoryTapRecognizer.swift */; };
 		BAA437512F9BC69600C1CD80 /* EMSDashboard.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = BAA437502F9BC69600C1CD80 /* EMSDashboard.xcassets */; };
 		BABF376D2F9A7DC400D636B0 /* SocketIO in Frameworks */ = {isa = PBXBuildFile; productRef = BABF376C2F9A7DC400D636B0 /* SocketIO */; };
+		BAD2A7C72F9D3CCB00AC127A /* UnitConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAD2A7C62F9D3CC500AC127A /* UnitConfig.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -32,7 +34,9 @@
 		B200 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		B201 /* EMSDashboard.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = EMSDashboard.entitlements; sourceTree = "<group>"; };
 		BA3882582F9C152500126D42 /* AddressNotesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddressNotesView.swift; sourceTree = "<group>"; };
+		BA74A5522F9CFA7A00E994C2 /* HistoryTapRecognizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryTapRecognizer.swift; sourceTree = "<group>"; };
 		BAA437502F9BC69600C1CD80 /* EMSDashboard.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = EMSDashboard.xcassets; sourceTree = "<group>"; };
+		BAD2A7C62F9D3CC500AC127A /* UnitConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnitConfig.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -75,6 +79,8 @@
 		C002 /* EMSDashboard */ = {
 			isa = PBXGroup;
 			children = (
+				BAD2A7C62F9D3CC500AC127A /* UnitConfig.swift */,
+				BA74A5522F9CFA7A00E994C2 /* HistoryTapRecognizer.swift */,
 				BA788E892F9AE9ED009220F3 /* Libs */,
 				B101 /* AppDelegate.swift */,
 				B102 /* SceneDelegate.swift */,
@@ -181,6 +187,8 @@
 				A102 /* SceneDelegate.swift in Sources */,
 				A104 /* CarPlaySceneDelegate.swift in Sources */,
 				A105 /* DashboardTemplate.swift in Sources */,
+				BA74A5532F9CFA7C00E994C2 /* HistoryTapRecognizer.swift in Sources */,
+				BAD2A7C72F9D3CCB00AC127A /* UnitConfig.swift in Sources */,
 				A106 /* CallDataModel.swift in Sources */,
 				BA3882592F9C152600126D42 /* AddressNotesView.swift in Sources */,
 				A107 /* EMSSocketManager.swift in Sources */,
@@ -315,7 +323,7 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = EMSDashboard/EMSDashboard.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = MCRK97V7ZB;
 				ENABLE_PREVIEWS = YES;
@@ -348,7 +356,7 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = EMSDashboard/EMSDashboard.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = MCRK97V7ZB;
 				ENABLE_PREVIEWS = YES;

@@ -56,7 +56,9 @@ class EMSSocketManager {
                 address:   first["address"]   as? String ?? "Unknown Address",
                 cross:     first["cross"]     as? String ?? "",
                 problem:   first["problem"]   as? String ?? "Unknown Problem",
+                comments:  first["comments"]  as? String ?? "",
                 units:     first["units"]     as? String ?? "",
+                type:      first["type"]      as? String ?? "",
                 age:       first["age"]       as? String ?? "",
                 sex:       first["sex"]       as? String ?? "",
                 conscious: first["conscious"] as? String ?? "",
@@ -89,7 +91,24 @@ class EMSSocketManager {
             }
         }
 
+        socket?.on("notesUpdate") { [weak self] data, _ in
+            self?.handleNotesUpdate(data)
+        }
+
         socket?.connect()
+
+        // Fetch notes on connect so we have them immediately
+        AddressNotesManager.shared.fetchNotes(serverURL: serverURL)
+    }
+
+    // Called when notesUpdate socket event arrives
+    private func handleNotesUpdate(_ data: [Any]) {
+        guard let notesArray = data[0] as? [[String: Any]] else { return }
+        DispatchQueue.main.async {
+            AddressNotesManager.shared.handleNotesUpdate(notesArray)
+            // Post notification so any visible call screen can refresh
+            NotificationCenter.default.post(name: NSNotification.Name("EMSNotesUpdated"), object: nil)
+        }
     }
 
     func disconnect() {

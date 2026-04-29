@@ -25,9 +25,13 @@ class MainDashboardViewController: UIViewController {
     private let problemLabel        = UILabel()
     private let addressLabel        = UILabel()
     private let crossLabel          = UILabel()
-    private let unitsLabel          = UILabel()
     private let patientLabel        = UILabel()
     private let openDetailButton    = UIButton()
+    private let notesView           = AddressNotesView()
+    private let cityLabel           = UILabel()
+    private let unitsDetailLabel    = UILabel()
+    private let mutualAidBanner     = UIView()
+    private let mutualAidLabel      = UILabel()
 
     // Hospital section
     private let hospitalSection     = UIView()
@@ -127,7 +131,6 @@ class MainDashboardViewController: UIViewController {
         contactsBtn.contentEdgeInsets  = UIEdgeInsets(top: 6, left: 10, bottom: 6, right: 10)
         contactsBtn.addTarget(self, action: #selector(openContacts), for: .touchUpInside)
 
-
         let logoutBtn = UIButton(type: .system)
         logoutBtn.setTitle("🔒 LOGOUT", for: .normal)
         logoutBtn.titleLabel?.font   = .systemFont(ofSize: 12, weight: .semibold)
@@ -152,7 +155,6 @@ class MainDashboardViewController: UIViewController {
         callCard.layer.cornerRadius = 20
         callCard.layer.borderWidth  = 1
         callCard.layer.borderColor  = UIColor(white: 0.2, alpha: 1).cgColor
-        callCard.clipsToBounds      = true
 
         let tap = UITapGestureRecognizer(target: self, action: #selector(openCallDetail))
         callCard.addGestureRecognizer(tap)
@@ -160,25 +162,24 @@ class MainDashboardViewController: UIViewController {
         buildNoCallView()
         buildActiveCallView()
 
-        noCallView.translatesAutoresizingMaskIntoConstraints     = false
-        activeCallView.translatesAutoresizingMaskIntoConstraints = false
-        callCard.addSubview(noCallView)
-        callCard.addSubview(activeCallView)
+        // Stack the two states vertically inside the card
+        // Only one is visible at a time — isHidden removes it from layout
+        let cardStack = UIStackView(arrangedSubviews: [noCallView, activeCallView])
+        cardStack.axis = .vertical
+        cardStack.translatesAutoresizingMaskIntoConstraints = false
+        callCard.addSubview(cardStack)
 
         NSLayoutConstraint.activate([
-            noCallView.topAnchor.constraint(equalTo: callCard.topAnchor),
-            noCallView.bottomAnchor.constraint(equalTo: callCard.bottomAnchor),
-            noCallView.leadingAnchor.constraint(equalTo: callCard.leadingAnchor),
-            noCallView.trailingAnchor.constraint(equalTo: callCard.trailingAnchor),
-
-            activeCallView.topAnchor.constraint(equalTo: callCard.topAnchor),
-            activeCallView.bottomAnchor.constraint(equalTo: callCard.bottomAnchor),
-            activeCallView.leadingAnchor.constraint(equalTo: callCard.leadingAnchor),
-            activeCallView.trailingAnchor.constraint(equalTo: callCard.trailingAnchor)
+            cardStack.topAnchor.constraint(equalTo: callCard.topAnchor),
+            cardStack.bottomAnchor.constraint(equalTo: callCard.bottomAnchor),
+            cardStack.leadingAnchor.constraint(equalTo: callCard.leadingAnchor),
+            cardStack.trailingAnchor.constraint(equalTo: callCard.trailingAnchor)
         ])
 
+        activeCallView.isHidden = true
+        noCallView.isHidden     = false
+
         contentStack.addArrangedSubview(callCard)
-        showNoCall()
     }
 
     private func buildNoCallView() {
@@ -230,14 +231,43 @@ class MainDashboardViewController: UIViewController {
         crossLabel.numberOfLines = 1
         crossLabel.isHidden      = true
 
-        unitsLabel.font          = .systemFont(ofSize: 14, weight: .regular)
-        unitsLabel.textColor     = UIColor(white: 0.6, alpha: 1)
-        unitsLabel.numberOfLines = 2
-
         patientLabel.font          = .systemFont(ofSize: 14, weight: .semibold)
         patientLabel.textColor     = .systemYellow
         patientLabel.numberOfLines = 1
         patientLabel.isHidden      = true
+
+        // City / Town label — pill badge, not full width
+        cityLabel.font            = UIFont.monospacedSystemFont(ofSize: 11, weight: .bold)
+        cityLabel.textColor       = .white
+        cityLabel.numberOfLines   = 1
+        cityLabel.textAlignment   = .center
+        cityLabel.layer.cornerRadius = 8
+        cityLabel.clipsToBounds   = true
+        cityLabel.isHidden        = true
+        // Padding via attributed string approach — set in showActiveCall
+
+        // Units detail label
+        unitsDetailLabel.font          = .systemFont(ofSize: 13, weight: .regular)
+        unitsDetailLabel.textColor     = UIColor(white: 0.6, alpha: 1)
+        unitsDetailLabel.numberOfLines = 3
+        unitsDetailLabel.isHidden      = true
+
+        // Mutual Aid Banner
+        mutualAidBanner.backgroundColor    = UIColor(red: 0.5, green: 0.3, blue: 0.0, alpha: 1)
+        mutualAidBanner.layer.cornerRadius = 8
+        mutualAidBanner.isHidden           = true
+
+        mutualAidLabel.font          = UIFont.monospacedSystemFont(ofSize: 11, weight: .bold)
+        mutualAidLabel.textColor     = .white
+        mutualAidLabel.textAlignment = .center
+        mutualAidLabel.translatesAutoresizingMaskIntoConstraints = false
+        mutualAidBanner.addSubview(mutualAidLabel)
+        NSLayoutConstraint.activate([
+            mutualAidLabel.topAnchor.constraint(equalTo: mutualAidBanner.topAnchor, constant: 6),
+            mutualAidLabel.bottomAnchor.constraint(equalTo: mutualAidBanner.bottomAnchor, constant: -6),
+            mutualAidLabel.leadingAnchor.constraint(equalTo: mutualAidBanner.leadingAnchor, constant: 12),
+            mutualAidLabel.trailingAnchor.constraint(equalTo: mutualAidBanner.trailingAnchor, constant: -12)
+        ])
 
         // Button
         var btnCfg = UIButton.Configuration.filled()
@@ -252,40 +282,55 @@ class MainDashboardViewController: UIViewController {
         div.backgroundColor = UIColor(white: 0.2, alpha: 1)
         div.heightAnchor.constraint(equalToConstant: 1).isActive = true
 
+        // Wrap cityLabel in a leading-aligned container so it doesn't stretch full width
+        let cityRow = UIStackView(arrangedSubviews: [cityLabel, UIView()])
+        cityRow.axis = .horizontal; cityRow.spacing = 0; cityRow.alignment = .center
+
         let infoStack = UIStackView(arrangedSubviews: [
+            cityRow,
+            mutualAidBanner,
             addressLabel, crossLabel, problemLabel,
             div,
-            unitsLabel, patientLabel,
+            unitsDetailLabel,
+            patientLabel,
+            notesView,
             openDetailButton
         ])
         infoStack.axis      = .vertical
         infoStack.spacing   = 8
         infoStack.alignment = .fill
-        infoStack.setCustomSpacing(4, after: addressLabel)
+        infoStack.setCustomSpacing(4,  after: cityLabel)
+        infoStack.setCustomSpacing(6,  after: mutualAidBanner)
+        infoStack.setCustomSpacing(4,  after: addressLabel)
         infoStack.setCustomSpacing(10, after: crossLabel)
         infoStack.setCustomSpacing(12, after: problemLabel)
-        infoStack.setCustomSpacing(12, after: div)
+        infoStack.setCustomSpacing(10, after: div)
+        infoStack.setCustomSpacing(8,  after: unitsDetailLabel)
         infoStack.setCustomSpacing(14, after: patientLabel)
         infoStack.translatesAutoresizingMaskIntoConstraints = false
 
-        activeCallView.addSubview(redBar)
-        activeCallView.addSubview(infoStack)
+        // Wrap redBar + infoStack in a vertical stack — sizes from content
+        let outerStack = UIStackView(arrangedSubviews: [redBar, infoStack])
+        outerStack.axis = .vertical
+        outerStack.spacing = 0
+        outerStack.translatesAutoresizingMaskIntoConstraints = false
+        activeCallView.addSubview(outerStack)
 
         NSLayoutConstraint.activate([
-            redBar.topAnchor.constraint(equalTo: activeCallView.topAnchor),
-            redBar.leadingAnchor.constraint(equalTo: activeCallView.leadingAnchor),
-            redBar.trailingAnchor.constraint(equalTo: activeCallView.trailingAnchor),
             redBar.heightAnchor.constraint(equalToConstant: 36),
 
             badge.leadingAnchor.constraint(equalTo: redBar.leadingAnchor, constant: 16),
             badge.centerYAnchor.constraint(equalTo: redBar.centerYAnchor),
 
-
-            infoStack.topAnchor.constraint(equalTo: redBar.bottomAnchor, constant: 16),
-            infoStack.bottomAnchor.constraint(equalTo: activeCallView.bottomAnchor, constant: -16),
-            infoStack.leadingAnchor.constraint(equalTo: activeCallView.leadingAnchor, constant: 16),
-            infoStack.trailingAnchor.constraint(equalTo: activeCallView.trailingAnchor, constant: -16)
+            outerStack.topAnchor.constraint(equalTo: activeCallView.topAnchor),
+            outerStack.bottomAnchor.constraint(equalTo: activeCallView.bottomAnchor),
+            outerStack.leadingAnchor.constraint(equalTo: activeCallView.leadingAnchor),
+            outerStack.trailingAnchor.constraint(equalTo: activeCallView.trailingAnchor)
         ])
+
+        // Add padding to infoStack via layout margins
+        infoStack.isLayoutMarginsRelativeArrangement = true
+        infoStack.layoutMargins = UIEdgeInsets(top: 16, left: 16, bottom: 16, right: 16)
     }
 
     // MARK: - Hospital Section
@@ -421,36 +466,60 @@ class MainDashboardViewController: UIViewController {
     }
 
     private func historyCard(_ record: EMSCallRecord) -> UIView {
-        let card = UIView()
+        // Use UIButton — reliably tappable inside scroll views
+        let card = UIButton(type: .system)
         card.backgroundColor    = UIColor(white: 0.09, alpha: 1)
         card.layer.cornerRadius = 12
         card.layer.borderWidth  = 1
         card.layer.borderColor  = UIColor(white: 0.15, alpha: 1).cgColor
 
-        // Use uniquely named locals — do NOT use same names as class properties
+        // Store record index so handler can look it up
+        if let idx = callHistory.firstIndex(where: {
+            $0.call.address == record.call.address && $0.call.problem == record.call.problem
+        }) {
+            card.tag = idx
+        }
+        card.addTarget(self, action: #selector(historyCardTapped(_:)), for: .touchUpInside)
+
+        // Dim on highlight
+        card.addTarget(self, action: #selector(historyCardHighlight(_:)), for: .touchDown)
+        card.addTarget(self, action: #selector(historyCardUnhighlight(_:)), for: [.touchUpInside, .touchUpOutside, .touchCancel])
+
         let hProb = UILabel(); hProb.text = record.call.problem
         hProb.font = .systemFont(ofSize: 14, weight: .semibold)
         hProb.textColor = UIColor(white: 0.85, alpha: 1)
+        hProb.isUserInteractionEnabled = false
 
         let hAddr = UILabel(); hAddr.text = record.call.address
         hAddr.font = .systemFont(ofSize: 12); hAddr.textColor = .systemGray
+        hAddr.isUserInteractionEnabled = false
 
         let hTime = UILabel(); hTime.text = record.formattedTime
         hTime.font = UIFont.monospacedSystemFont(ofSize: 11, weight: .regular)
         hTime.textColor = UIColor(white: 0.4, alpha: 1); hTime.textAlignment = .right
+        hTime.isUserInteractionEnabled = false
 
         let hAgo = UILabel(); hAgo.text = record.timeAgoString
         hAgo.font = UIFont.monospacedSystemFont(ofSize: 10, weight: .regular)
         hAgo.textColor = UIColor(white: 0.35, alpha: 1); hAgo.textAlignment = .right
+        hAgo.isUserInteractionEnabled = false
+
+        let chevron = UIImageView(image: UIImage(systemName: "chevron.right"))
+        chevron.tintColor = UIColor(white: 0.3, alpha: 1)
+        chevron.setContentHuggingPriority(.required, for: .horizontal)
+        chevron.isUserInteractionEnabled = false
 
         let rightCol = UIStackView(arrangedSubviews: [hTime, hAgo])
         rightCol.axis = .vertical; rightCol.alignment = .trailing; rightCol.spacing = 2
+        rightCol.isUserInteractionEnabled = false
 
         let leftCol = UIStackView(arrangedSubviews: [hProb, hAddr])
         leftCol.axis = .vertical; leftCol.spacing = 2
+        leftCol.isUserInteractionEnabled = false
 
-        let row = UIStackView(arrangedSubviews: [leftCol, UIView(), rightCol])
-        row.axis = .horizontal; row.alignment = .center
+        let row = UIStackView(arrangedSubviews: [leftCol, UIView(), rightCol, chevron])
+        row.axis = .horizontal; row.alignment = .center; row.spacing = 8
+        row.isUserInteractionEnabled = false
         row.translatesAutoresizingMaskIntoConstraints = false
         card.addSubview(row)
 
@@ -461,6 +530,21 @@ class MainDashboardViewController: UIViewController {
             row.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -14)
         ])
         return card
+    }
+
+    @objc private func historyCardTapped(_ sender: UIButton) {
+        guard sender.tag < callHistory.count else { return }
+        let record = callHistory[sender.tag]
+        let vc = CallDetailViewController(call: record.call)
+        navigationController?.pushViewController(vc, animated: true)
+    }
+
+    @objc private func historyCardHighlight(_ sender: UIButton) {
+        UIView.animate(withDuration: 0.1) { sender.backgroundColor = UIColor(white: 0.16, alpha: 1) }
+    }
+
+    @objc private func historyCardUnhighlight(_ sender: UIButton) {
+        UIView.animate(withDuration: 0.15) { sender.backgroundColor = UIColor(white: 0.09, alpha: 1) }
     }
 
     // MARK: - Footer
@@ -483,6 +567,14 @@ class MainDashboardViewController: UIViewController {
         coLbl.font = .systemFont(ofSize: 15, weight: .bold)
         coLbl.textColor = UIColor(white: 0.7, alpha: 1); coLbl.textAlignment = .center
 
+        // Change Password button
+        let changePwBtn = UIButton(type: .system)
+        changePwBtn.setTitle("🔑  Change Password", for: .normal)
+        changePwBtn.titleLabel?.font = .systemFont(ofSize: 13, weight: .semibold)
+        changePwBtn.tintColor        = UIColor(white: 0.5, alpha: 1)
+        changePwBtn.addTarget(self, action: #selector(openChangePassword), for: .touchUpInside)
+        contentStack.addArrangedSubview(changePwBtn)
+
         let webBtn = UIButton(type: .system)
         webBtn.setTitle("🌐  embtech.llc", for: .normal)
         webBtn.titleLabel?.font = UIFont.monospacedSystemFont(ofSize: 13, weight: .regular)
@@ -503,6 +595,13 @@ class MainDashboardViewController: UIViewController {
     // MARK: - Data Observation
 
     private func observeData() {
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(refreshNotes),
+            name: NSNotification.Name("EMSNotesUpdated"),
+            object: nil
+        )
+
         CallDataModel.shared.$currentCall
             .receive(on: DispatchQueue.main)
             .sink { [weak self] call in self?.handleCallUpdate(call) }
@@ -536,33 +635,77 @@ class MainDashboardViewController: UIViewController {
     // MARK: - Card States
 
     private func showNoCall() {
-        UIView.animate(withDuration: 0.3) {
-            self.activeCallView.alpha = 0
-            self.noCallView.alpha     = 1
-        }
+        activeCallView.isHidden = true
+        noCallView.isHidden     = false
         callCard.layer.borderColor = UIColor(white: 0.2, alpha: 1).cgColor
     }
 
     private func showActiveCall(_ call: EMSCall) {
-        problemLabel.text   = call.problem.uppercased()
+        problemLabel.text   = call.displayProblem
         addressLabel.text   = call.address
         crossLabel.text     = call.cross.isEmpty ? "" : "Cross: \(call.cross)"
         crossLabel.isHidden = call.cross.isEmpty
-        unitsLabel.text     = "🚒  " + (call.units.isEmpty ? "No units assigned" : call.units)
+
+        // Origin label — same logic as web dashboard
+        // MutualAid=purple, Pelham=green, Scarsdale=orange, Eastchester=blue
+        let origin = call.callOrigin
+        cityLabel.text     = "  🚑 " + call.originLabel + "  "
+        cityLabel.isHidden = false
+        switch origin {
+        case .mutualAid:
+            cityLabel.backgroundColor = UIColor(red: 0.47, green: 0.21, blue: 0.73, alpha: 1)
+            cityLabel.textColor       = .white
+        case .pelham:
+            cityLabel.backgroundColor = call.isMutualAid
+                ? UIColor(red: 0.47, green: 0.21, blue: 0.73, alpha: 1)
+                : UIColor(red: 0.13, green: 0.55, blue: 0.13, alpha: 1)
+            cityLabel.textColor       = .white
+        case .scarsdale:
+            cityLabel.backgroundColor = UIColor(red: 0.8, green: 0.35, blue: 0.0, alpha: 1)
+            cityLabel.textColor       = .white
+        case .eastchester, .unknown:
+            cityLabel.backgroundColor = UIColor(red: 0.14, green: 0.35, blue: 0.75, alpha: 1)
+            cityLabel.textColor       = .white
+        }
+        cityLabel.layer.cornerRadius = 8
+        cityLabel.clipsToBounds      = true
+
+        // Units — one per line
+        let lines = call.unitLines
+        if !lines.isEmpty {
+            unitsDetailLabel.text     = lines.map { "🚒  \($0)" }.joined(separator: "\n")
+            unitsDetailLabel.isHidden = false
+        } else {
+            unitsDetailLabel.isHidden = true
+        }
+
+        // Mutual Aid Banner
+        if call.isMutualAid {
+            mutualAidLabel.text      = "⚠️  MUTUAL AID"
+            mutualAidBanner.isHidden = false
+        } else {
+            mutualAidBanner.isHidden = true
+        }
 
         let patient = call.patientSummary
         patientLabel.isHidden = (patient == "No patient info")
         patientLabel.text     = patient == "No patient info" ? "" : "🧑‍⚕️  \(patient)"
 
-        UIView.animate(withDuration: 0.3) {
-            self.noCallView.alpha     = 0
-            self.activeCallView.alpha = 1
-        }
+        // Address Notes
+        notesView.configure(with: AddressNotesManager.shared.notes(for: call.address))
+
+        noCallView.isHidden     = true
+        activeCallView.isHidden = false
         callCard.layer.borderColor = UIColor.systemRed.withAlphaComponent(0.6).cgColor
     }
 
 
     // MARK: - Actions
+
+    @objc private func refreshNotes() {
+        guard let call = CallDataModel.shared.currentCall else { return }
+        notesView.configure(with: AddressNotesManager.shared.notes(for: call.address))
+    }
 
     @objc private func openCallDetail() {
         guard let call = CallDataModel.shared.currentCall else { return }
@@ -604,6 +747,10 @@ class MainDashboardViewController: UIViewController {
 
     @objc private func openWebsite() {
         if let url = URL(string: "https://embtech.llc") { UIApplication.shared.open(url) }
+    }
+
+    @objc private func openChangePassword() {
+        navigationController?.pushViewController(ChangePasswordViewController(), animated: true)
     }
 
     @objc private func openEmail() {

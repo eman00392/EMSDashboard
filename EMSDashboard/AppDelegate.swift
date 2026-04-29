@@ -1,8 +1,6 @@
 import UIKit
 import CarPlay
-import GoogleMaps
 
-// In application(_:didFinishLaunchingWithOptions:)
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
@@ -12,16 +10,15 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
     ) -> Bool {
-        print("🟢 [AppDelegate] didFinishLaunching")
-        GMSServices.provideAPIKey("AIzaSyA11vd0wsPQBOZxNY1KiSI15cuFMEhFwUU")
-        // Start Socket.IO
+
+        // Start socket connection
         EMSSocketManager.shared.connect()
 
-        // Request notification permission and set delegate
-        // NotificationManager sets itself as UNUserNotificationCenterDelegate
+        // Request local notification permissions
         NotificationManager.shared.requestPermission()
 
-        // Register for remote push (APNs)
+        // Register for remote push notifications (APNs)
+        // Required for calls to arrive when app is closed
         application.registerForRemoteNotifications()
 
         return true
@@ -35,34 +32,15 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         options: UIScene.ConnectionOptions
     ) -> UISceneConfiguration {
 
-        let role = connectingSceneSession.role.rawValue
-        print("🟢 [AppDelegate] configurationForConnecting — role: \(role)")
-
         if connectingSceneSession.role == UISceneSession.Role.carTemplateApplication {
-            print("🟢 [AppDelegate] → Routing to CarPlaySceneDelegate")
-            let config = UISceneConfiguration(
-                name: "CarPlay Configuration",
-                sessionRole: connectingSceneSession.role
-            )
+            let config = UISceneConfiguration(name: "CarPlay", sessionRole: connectingSceneSession.role)
             config.delegateClass = CarPlaySceneDelegate.self
             return config
         }
-
-        print("🟢 [AppDelegate] → Routing to SceneDelegate")
-        let config = UISceneConfiguration(
-            name: "Default Configuration",
-            sessionRole: connectingSceneSession.role
-        )
-        config.delegateClass = SceneDelegate.self
-        return config
+        return UISceneConfiguration(name: "Default Configuration", sessionRole: connectingSceneSession.role)
     }
 
-    func application(
-        _ application: UIApplication,
-        didDiscardSceneSessions sceneSessions: Set<UISceneSession>
-    ) {}
-
-    // MARK: - APNs
+    // MARK: - APNs Token Registration
 
     func application(
         _ application: UIApplication,
@@ -70,19 +48,69 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     ) {
         let token = deviceToken.map { String(format: "%02x", $0) }.joined()
         print("📱 APNs token: \(token)")
+        UserDefaults.standard.set(token, forKey: "apns_device_token")
 
-        guard let url = URL(string: "http://www.embtech.llc:3030/register-device") else { return }
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = try? JSONSerialization.data(withJSONObject: ["token": token])
-        URLSession.shared.dataTask(with: request).resume()
+        // Register with server
+        guard let url = URL(string: "\(AuthManager.shared.serverURL)/register-device") else { return }
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.httpBody = try? JSONSerialization.data(withJSONObject: ["token": token])
+        URLSession.shared.dataTask(with: req).resume()
     }
+
+    func application(_ application: UIApplication,
+                     didFailToRegisterForRemoteNotificationsWithError error: Error) {
+        print("❌ APNs failed: \(error.localizedDescription)")
+    }
+
+    // MARK: - Remote Notification Received
+    // Called when a push arrives while app is in background OR closed.
+    // The payload contains callData so we can update the UI without a socket.
 
     func application(
         _ application: UIApplication,
-        didFailToRegisterForRemoteNotificationsWithError error: Error
+        didReceiveRemoteNotification userInfo: [AnyHashable: Any],
+        fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void
     ) {
-        print("❌ APNs failed: \(error.localizedDescription)")
+        guard let callData = userInfo["callData"] as? [String: Any] else {
+            completionHandler(.noData); return
+        }
+
+        let call = EMSCall(
+            address:   callData["address"]   as? String ?? "",
+            cross:     callData["cross"]     as? String ?? "",
+            problem:   callData["problem"]   as? String ?? "",
+            units:     callData["units"]     as? String ?? "",
+            comments:  callData["comments"]  as? String ?? "",
+            type:      callData["type"]      as? String ?? "",
+            age:       callData["age"]       as? String ?? "",
+            sex:       callData["sex"]       as? String ?? "",
+            conscious: callData["conscious"] as? String ?? "",
+            breathing: callData["breathing"] as? String ?? "",
+            lat:       callData["lat"]       as? Double ?? 0,
+            lng:       callData["lng"]       as? Double ?? 0
+        )
+
+        let callID    = "\(call.address)|\(call.problem)"
+        let savedID   = CallDataModel.shared.lastNotifiedCallID
+        let isNewCall = callID != savedID
+
+        DispatchQueue.main.async {
+            if isNewCall {
+                CallDataModel.shared.lastNotifiedCallID     = callID
+                CallDataModel.shared.activeCallDispatchTime = Date()
+                CallHistoryManager.shared.saveCall(call)
+                print("📲 Push — new call: \(callID)")
+            }
+            CallDataModel.shared.currentCall = call
+
+            // Reconnect socket if needed so live updates resume
+            if !CallDataModel.shared.isConnected {
+                EMSSocketManager.shared.connect()
+            }
+        }
+
+        completionHandler(isNewCall ? .newData : .noData)
     }
 }
